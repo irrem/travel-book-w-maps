@@ -8,6 +8,8 @@ import androidx.fragment.app.FragmentActivity;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -21,9 +23,12 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.io.IOException;
 import java.security.Permission;
+import java.util.List;
+import java.util.Locale;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,GoogleMap.OnMapLongClickListener {
 
     private GoogleMap mMap;
     LocationListener locationListener;
@@ -42,18 +47,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        mMap.setOnMapLongClickListener(this);
+
         locationManager= (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        locationListener=new LocationListener() {
+        locationListener= new LocationListener() {
+
             @Override
             public void onLocationChanged(@NonNull Location location) {
-                mMap.clear();
+              /*  mMap.clear();
                 LatLng userLocation= new LatLng(location.getLatitude(),location.getLongitude());
                 mMap.addMarker(new MarkerOptions().position(userLocation).title("You are here"));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation,14));
 
                 System.out.println("location"+location.toString() );
-            }
-        };
+              */
+
+             }
+            };
 
         if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED){
 
@@ -67,14 +77,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (lastLocation != null) {
                 LatLng userLastLocation = new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude());
                 mMap.addMarker(new MarkerOptions().position(userLastLocation).title("You was here"));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLastLocation,14));
-            }
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLastLocation,8));
+             }
         }
 
-      // LatLng antkabir = new LatLng(39.92528435685113, 32.836986812500925);
-      // mMap.addMarker(new MarkerOptions().position(antkabir).title("Marker in Anıtkabir"));
-      //  mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(antkabir,12));
-      // mMap.moveCamera(CameraUpdateFactory.newLatLng(antkabir));
+                  // LatLng antkabir = new LatLng(39.92528435685113, 32.836986812500925);
+                  // mMap.addMarker(new MarkerOptions().position(antkabir).title("Marker in Anıtkabir"));
+                  //  mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(antkabir,12));
+                 // mMap.moveCamera(CameraUpdateFactory.newLatLng(antkabir));
     }
 
     @Override
@@ -88,5 +98,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    @Override
+    public void onMapLongClick(LatLng latLng) {
+        mMap.clear();
+        Geocoder geocoder= new Geocoder(getApplicationContext(), Locale.getDefault());
+        String address=" ";
+
+        try {
+            List<Address> addressList= geocoder.getFromLocation(latLng.latitude,latLng.longitude,1);
+            if(addressList!=null && addressList.size()>0){
+                if(addressList.get(0).getAdminArea()!=null){
+                    address+=addressList.get(0).getAdminArea();
+
+                   System.out.println(addressList.get(0).getAdminArea().toString());
+                    if(addressList.get(0).getSubThoroughfare()!= null){
+                        address+=addressList.get(0).getSubThoroughfare();
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        mMap.addMarker(new MarkerOptions().position(latLng).title(address));
+
+
+
+
     }
 }
